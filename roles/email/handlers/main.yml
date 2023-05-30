@@ -1,0 +1,23 @@
+- name: restart postfix
+  service:
+    name: postfix
+    state: restarted
+  listen: "restart postfix"
+
+- name: restart dovecot
+  service:
+    name: dovecot
+    state: restarted
+  listen: "restart dovecot"
+
+- name: restart httpd
+  service:
+    name: httpd
+    state: restarted
+  listen: "restart httpd"
+
+- name: restart php-fpm
+  service:
+    name: php-fpm
+    state: restarted
+  listen: "restart php"

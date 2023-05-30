@@ -1,0 +1,52 @@
+- name: Create docker folder
+  file:
+    path: /etc/docker
+    state: directory
+    owner: root
+    group: root
+    mode: 0755
+
+- name: Docker daemon.json file settings
+  copy:
+    src: daemon.json
+    dest: /etc/docker/daemon.json
+
+- name: Do part 1 Lab 9 commands
+  pause:
+
+- name: Create docker lab dir
+  file:
+    path: /home/centos/docker_lab
+    state: directory
+    owner: root
+    group: root
+    mode: 0755
+
+- name: Create Dockerfile and server.py
+  copy:
+    src: "{{ item.src }}"
+    dest: "/home/centos/docker_lab/{{ item.dest }}"
+    owner: root
+    group: root
+    mode: 0644
+  loop:
+    - src: Dockerfile
+      dest: Dockerfile
+    - src: server.py
+      dest: server.py
+
+- name: Run part 2 from commands
+  pause:
+    prompt: ""
+
+- name: Insert half-done container-proxy vh
+  template:
+    src: vh_container.j2
+    dest: /etc/httpd/conf.d/container-proxy.conf
+    owner: root
+    group: root
+    mode: 0644
+
+- name: Run part 3 from commands
+  pause:
+    prompt: Make shure to check ip and restart httpd

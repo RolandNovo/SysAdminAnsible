@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    deployment.kubernetes.io/revision: "1"
+  labels:
+    app: hello-deploy
+  name: hello-deploy
+  namespace: lab11
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: hello-deploy
+  template:
+    metadata:
+      labels:
+        app: hello-deploy
+    spec:
+      containers:
+      - image: registry.hpc.ut.ee/sysadmincourse-dev/hello-world:1.0
+        imagePullPolicy: Never
+        name: hello-world
+        ports:
+        - containerPort: 5000

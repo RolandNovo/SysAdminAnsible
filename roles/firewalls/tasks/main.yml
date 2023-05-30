@@ -1,0 +1,37 @@
+- name: Allow all required services
+  firewalld:
+    service: "{{ item }}"
+    permanent: true
+    state: enabled
+  loop:
+    - dns
+    - http
+    - https
+ 
+- name: Allow all required ports
+  firewalld:
+    port: "{{ item }}/tcp"
+    permanent: true
+    state: enabled
+  loop:
+    - 8301
+    - 25
+    - 143
+    - 993
+    - 465
+    - 587
+    - 111
+    - 2049
+    - 139
+    - 445
+    - 5005
+    - 50080
+    - 58080
+    - 6443
+    - 10250
+    - 8080
+    - 8443
+
+- name: Reload firewall
+  pause:
+    prompt: firewall-cmd --reload

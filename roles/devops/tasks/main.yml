@@ -1,0 +1,28 @@
+- name: Pause to install required things
+  pause:
+    prompt: "Look in commands"
+
+- name: Make directory
+  file:
+    path: /etc/traefik
+    state: directory
+
+- name: Copy file into traefik folder
+  copy:
+    src: traefik.toml
+    dest: /etc/traefik/traefik.toml
+
+- name: Make devops dir
+  file:
+    path: /home/centos/devops_lab
+    state: directory
+
+- name: Create file into devops dir
+  template:
+    src: docker.yml.j2
+    dest: /home/centos/devops_lab/docker-compose.yml
+
+- name: Pause for part commands
+  pause:
+
+

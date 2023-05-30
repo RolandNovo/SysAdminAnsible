@@ -1,0 +1,26 @@
+<VirtualHost *:80>
+ ServerName www.{{ hostname }}.{{ domain_name }}
+ DocumentRoot /var/www/html/www.{{ hostname }}.{{ domain_name }}/public_html
+ # Possible values include: debug, info, notice, warn, error, crit, alert, emerg.
+ LogLevel debug
+
+ ErrorLog /var/log/httpd/www.{{ hostname }}-error.log
+ CustomLog /var/log/httpd/www.{{ hostname }}-access.log combined
+ ForensicLog /var/log/httpd/www.{{ hostname }}-forensic.log
+</VirtualHost>
+
+<VirtualHost *:443>
+ SSLENgine on
+ ServerName www.{{ hostname }}.{{ domain_name }}
+ DocumentRoot /var/www/html/www.{{ hostname }}.{{ domain_name }}/public_html
+ # Possible values include: debug, info, notice, warn, error, crit, alert, emerg.
+ LogLevel debug
+
+ SSLCertificateFile /etc/pki/tls/certs/www_server.crt
+ SSLCertificateKeyFile /etc/pki/tls/private/www_server.key
+ SSLCACertificateFile /etc/pki/tls/certs/cacert.crt
+ 
+ ErrorLog /var/log/httpd/www.{{ hostname }}-error.log
+ CustomLog /var/log/httpd/www.{{ hostname }}-access.log combined
+ ForensicLog /var/log/httpd/www.{{ hostname }}-forensic.log
+</VirtualHost>

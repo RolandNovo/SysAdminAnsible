@@ -1,0 +1,11 @@
+- name: Restart postfix
+  service:
+    name: postfix
+    state: restarted
+  listen: "restart postfix"
+
+- name: Restart dovecot
+  service:
+    name: dovecot
+    state: restarted
+  listen: "restart dovecot"

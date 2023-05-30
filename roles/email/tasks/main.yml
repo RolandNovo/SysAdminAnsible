@@ -1,0 +1,205 @@
+- name: install postfix and dovecot
+  dnf:
+    name:
+      - postfix
+      - dovecot
+      - telnet
+    state: latest
+
+- name: Edit postfix/main.cf
+  template:
+    src: main.cf.j2
+    dest: /etc/postfix/main.cf
+  notify: "restart postfix"
+ 
+- name: Start and enable postfix
+  service:
+    name: postfix
+    state: started
+    enabled: yes
+
+- name: Create mailuser
+  user:
+    name: mailuser
+ 
+- name: Send email
+  pause:
+    prompt: "Check file for email command"
+
+- name: Start and enable dovecot
+  service:
+    name: dovecot
+    state: started
+    enabled: yes
+
+- name: Edit dovecot logging file
+  copy:
+    src: dovecot.log
+    dest: /etc/dovecot/conf.d/10-logging.conf
+  notify: "restart dovecot"
+
+- name: Edit dovecot conf file
+  copy:
+    src: dovecot.conf
+    dest: /etc/dovecot/dovecot.conf
+  notify: "restart dovecot"
+
+- name: Edit dovecot auth file
+  copy:
+    src: auth.conf
+    dest: /etc/dovecot/conf.d/10-auth.conf
+  notify: "restart dovecot"
+
+- name: Edit dovecot mail file
+  copy:
+    src: mail.conf
+    dest: /etc/dovecot/conf.d/10-mail.conf
+  notify: "restart dovecot"
+
+- name: Add dovecot to mail group
+  user:
+    name: dovecot
+    groups: mail
+    append: yes
+
+- name: Edit dovecot mailboxes file
+  copy:
+    src: mailboxes.conf
+    dest: /etc/dovecot/conf.d/15-mailboxes.conf
+  notify: "restart dovecot"
+
+- name: Edit dovecot ssl file
+  copy:
+    src: ssl.conf
+    dest: /etc/dovecot/conf.d/10-ssl.conf
+  notify: "restart dovecot"
+
+- name: Edit dovecot master conf for listener
+  copy:
+    src: master.conf
+    dest: /etc/dovecot/conf.d/10-master.conf
+  notify: "restart dovecot"
+
+- name: Edit postfix master cf
+  copy:
+    src: master.cf
+    dest: /etc/postfix/master.cf
+  notify: "restart postfix"
+
+- name: Pause to run repo command
+  pause:
+    prompt: dnf config-manager --set-enabled crb
+
+- name: Use yum to install all packages
+  yum:
+    name:
+      - make
+      - ImageMagick
+      - ImageMagick-devel
+      - ImageMagick-perl
+      - pcre-devel
+      - zlib
+      - zlib-devel
+      - libzip
+      - libzip-devel
+      - libmcrypt-devel
+      - php
+      - php-fpm
+      - php-devel
+      - php-pear
+      - php-cli
+      - php-gd
+      - php-curl
+      - php-xml
+      - php-mysqlnd
+      - php-mbstring
+      - php-intl
+      - php-ldap
+      - mariadb
+      - mariadb-server
+      - httpd
+    state: latest
+
+- name: Install pear things
+  pear:
+    name: pecl/imagick, pecl/mcrypt, pecl/zip
+    state: latest
+
+- name: three installed pecl files
+  copy:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+  loop:
+    - src: imagick
+      dest: /etc/php.d/20-imagick.ini
+    - src: mcrypt
+      dest: /etc/php.d/20-mcrypt.ini
+    - src: zip
+      dest: /etc/php.d/20-zip.ini
+
+- name: Create database roundcubemail
+  mysql_db:
+    name: "{{ roundcube_db }}"
+    collation: utf8_general_ci
+    encoding: utf8
+    state: present
+    login_user: root
+    login_password: "{{ mysql_root_password }}"
+
+- name: Create roundcube user for dbmail
+  mysql_user:
+    name: "{{ roundcube_user }}"
+    password: "{{ roundcube_pass }}"
+    priv: "{{ roundcube_db }}.*:ALL"
+    state: present
+    login_user: root
+    login_password: "{{ mysql_root_password }}"
+
+- name: Download and unpack Roundcubemail
+  unarchive:
+    src: https://github.com/roundcube/roundcubemail/releases/download/1.6.1/roundcubemail-1.6.1-complete.tar.gz
+    dest: "/var/www/html"
+    remote_src: yes
+    creates: "/var/www/html/roundcubemail"
+
+- name: Grant apache rights in roundcubemail dir
+  file:
+    path: "/var/www/html/roundcubemail"
+    recurse: yes
+    owner: apache
+    group: apache
+
+- name: Sefcontext
+  sefcontext:
+    target: '/var/www/html/roundcubemail(/.*)?'
+    setype: 'httpd_sys_rw_content_t'
+    state: present
+
+- name: Create config file for vh mail
+  template:
+    src: vh_mail.j2
+    dest: /etc/httpd/conf.d/mail.{{ hostname }}.{{ domain_name }}.conf
+    owner: root
+    group: root
+    mode: '0644'
+  notify: "restart httpd"
+
+- name: Edit php.ini file
+  copy:
+    src: php.ini
+    dest: /etc/php.ini
+  notify: "restart php"
+
+- name: Make roundcube log dir
+  file:
+    path: /var/log/roundcube
+    state: directory
+    owner: apache
+    group: apache
+
+- name: Roundcubemail config file
+  template:
+    src: config.inc.php.j2
+    dest: /var/www/html/roundcubemail/config/config.inc.php
+    owner: apache
+    group: apache

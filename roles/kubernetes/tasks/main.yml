@@ -1,0 +1,47 @@
+- name: Create required folders
+  file:
+    path: /var/lib/rancher/k3s/server/manifests/
+    state: directory
+    mode: 0755
+
+- name: Create file with content in dir
+  copy:
+    src: traefik-config.yaml
+    dest: /var/lib/rancher/k3s/server/manifests/traefik-config.yaml
+
+- name: Copy deploy.yaml
+  copy:
+    src: "{{ item }}"
+    dest: /home/centos/kubernetes_lab/{{ item }}
+  loop:
+    - hello-deploy.yaml
+    - glutton.yaml
+    - favourite
+    - bucket.yaml
+    - lappod.yaml
+    - laptop.yaml
+    - pvol.yaml
+    - pvc.yaml
+    - volume-deploy.yaml
+    - serv-lab11.yaml
+    - ingr-lab11.yaml
+
+- name: Make fruit folder
+  file:
+    path: /home/centos/kubernetes_lab/fruit
+    state: directory
+
+- name: Copy 5 fruit files
+  copy:
+    src: "{{ item }}"
+    dest: /home/centos/kubernetes_lab/fruit/{{ item }}
+  loop:
+    - banana
+    - pear
+    - melon
+    - apple
+    - cucumber
+
+- name:
+  pause:
+    prompt: "Run Part 1 commands"

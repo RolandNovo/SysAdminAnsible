@@ -1,0 +1,89 @@
+- name: Create required filesystem directories
+  file:
+    path: "{{ item }}"
+    state: directory
+    owner: root
+    group: root
+    mode: 0755
+  loop:
+    - /lab8
+    - /lab8/fs-ext4
+    - /lab8/fs-xfs
+    - /shares
+    - /shares/nfs
+    - /shares/k8s
+    - /mnt/nfs
+    - /mnt/k8s
+
+- name: Create samba group folder
+  file:
+    path: /shares/samba
+    state: directory
+    recurse: yes
+    owner: root
+    group: samba_group
+    mode: 0755  
+
+- name: Install nfs-utils
+  dnf:
+    name:
+      - nfs-utils
+      - samba
+      - samba-common
+      - samba-client
+      - cifs-utils
+    state: latest
+
+- name: Start nfs-server service
+  service:
+    name: nfs-server
+    state: started
+
+- name: Pause for lab 8 commands part 1
+  pause:
+    prompt: "lab8 commands failis on olemas part 1"
+
+- name: Give access to localhost through exports
+  copy:
+    src: exports
+    dest: /etc/exports
+
+- name: Pause for lab 8 part 2
+  pause:
+
+- name: Ensure samba_group exists
+  group:
+    name: samba_group
+    state: present
+
+- name: Add users to samba_group
+  user:
+    name: "{{ item }}"
+    groups: samba_group
+    append: true
+  loop:
+    - scoring
+    - centos
+
+- name: Pause to add samba passwds
+  pause:
+    prompt: "lab 8 comments part 3"
+
+- name: Edit smb.conf file
+  copy:
+    src: smb.conf
+    dest: /etc/samba/smb.conf
+
+- name: Start and enable smb service
+  service:
+    name: smb
+    state: started
+    enabled: yes
+
+- name: Create scoringtestfile
+  template:
+    src: scoringtestfile.j2
+    dest: /home/centos/scoringtestfile
+
+- name: Do part 4 command
+  pause:

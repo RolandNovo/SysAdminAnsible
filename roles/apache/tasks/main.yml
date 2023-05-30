@@ -1,0 +1,187 @@
+- name: install required packages with dnf
+  dnf:
+    name:
+      - httpd
+      - python3-pip
+      - php-mysqlnd
+      - php-fpm
+      - mariadb-server
+      - tar
+      - curl
+      - php-json
+      - python3-PyMySQL
+      - mod_security.x86_64
+    state: latest
+ 
+- name: install Flask
+  pip:
+    name: flask
+
+- name: Create vh webroot dir into /var/www/html
+  file:
+    path: /var/www/html/www.{{ hostname }}.{{ domain_name }}
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Create public_html inside that dir
+  file:
+    path: /var/www/html/www.{{ hostname }}.{{ domain_name }}/public_html
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+
+- name: Create config file for vh www
+  template:
+    src: vh_www.j2
+    dest: /etc/httpd/conf.d/www.{{ hostname }}.conf
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Disable welcome page
+  copy:
+    src: welcome.conf
+    dest: /etc/httpd/conf.d/welcome.conf
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Create index.html file
+  template:
+    src: index.j2
+    dest: /var/www/html/www.{{ hostname }}.{{ domain_name }}/public_html/index.html
+    owner: root
+    group: root
+    mode: '0644'
+  notify: "restart httpd"
+
+- name: Seboolean
+  seboolean:
+    name: httpd_can_network_connect
+    state: yes
+    persistent: yes
+
+- name: Create config file for vh proxy
+  template:
+    src: vh_proxy.j2
+    dest: /etc/httpd/conf.d/proxy.conf
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Add user proxy as Linux user
+  user:
+    name: proxy
+
+- name: Create server.py file
+  template:
+    src: server.j2
+    dest: /usr/local/lib/server.py
+    owner: proxy
+    group: root
+    mode: '0644'
+
+- name: Create proxy.service file
+  copy:
+    src: proxy.service
+    dest: /etc/systemd/system/proxy.service
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Start and enable proxy
+  systemd:
+    daemon_reload: yes
+    name: proxy
+    state: started
+    enabled: yes
+
+- name: Start and enable mariadb
+  service:
+    name: mariadb
+    state: started
+    enabled: yes
+
+- name: Pause for mysql_secure_installation
+  pause:
+    prompt: "ctrl+c and then c to continue, ctrl+c and then a to abort"
+
+- name: Create database wordpress
+  mysql_db:
+    name: "{{ mysql_db }}"
+    state: present
+    login_user: root
+    login_password: "{{ mysql_root_password }}"
+
+- name: Create admin user for wordpress
+  mysql_user:
+    name: "{{ mysql_user }}"
+    password: "{{ mysql_admin_password }}"
+    priv: "{{ mysql_db }}.*:ALL"
+    state: present
+    login_user: root
+    login_password: "{{ mysql_root_password }}"
+
+- name: Download and unpack latest WordPress
+  unarchive:
+    src: https://wordpress.org/latest.tar.gz
+    dest: "/var/www/html"
+    remote_src: yes
+    creates: "/var/www/html/wordpress"
+
+- name: Grant apache user rights in wordpress dir
+  file:
+    path: "/var/www/html/wordpress"
+    recurse: yes  
+    owner: apache
+    group: apache
+
+- name: Sefcontext
+  sefcontext:
+    target: '/var/www/html/wordpress(/.*)?'
+    setype: 'httpd_sys_rw_content_t'
+    state: present
+
+- name: Consolidate WordPress PHP logs in php-fpm.conf
+  copy:
+    src: php-fpm.conf
+    dest: /etc/php-fpm.conf
+
+- name: Consolidate WordPress PHP logs in www.conf
+  copy:
+    src: www.conf
+    dest: /etc/php-fpm.d/www.conf
+
+- name: Create config file for vh wordpress
+  template:
+    src: vh_wordpress.j2
+    dest: /etc/httpd/conf.d/wordpress.conf
+    owner: root
+    group: root
+    mode: '0644'
+  notify: "restart httpd"
+
+- name: Start php-fpm service
+  service:
+    name: php-fpm
+    state: started
+    enabled: yes
+
+- name: Fill out Wordpress site info
+  pause:
+    prompt: "Info in notepad file and playbook, ctrl + c to continue"
+
+- name: Add line to apache2 config file
+  copy:
+    src: httpd.conf
+    dest: /etc/httpd/conf/httpd.conf
+  notify: "restart httpd"
+
+- name: Append rules to modsecurity
+  copy:
+    src: modsecurity
+    dest: /etc/httpd/modsecurity.d/local_rules/modsecurity_localrules.conf
+  notify: "restart httpd"

@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: bucket
+  namespace: vols
+spec:
+  containers:
+  - name: nginx
+    image: nginx
+    env:
+    - name: ilike
+      valueFrom:
+        configMapKeyRef:
+          name: veggies
+          key: favourite
+    

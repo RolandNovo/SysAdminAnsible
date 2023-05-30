@@ -1,0 +1,44 @@
+- name: install mod_ssl
+  dnf:
+    name:
+      - mod_ssl
+      - cyrus-sasl-plain
+    state: latest
+
+- name: Copy certificate files
+  copy:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+  loop:
+    - src: cacert.crt
+      dest: /etc/pki/tls/certs/cacert.crt
+    - src: www_server.crt
+      dest: /etc/pki/tls/certs/www_server.crt
+    - src: www_server.crt
+      dest: /etc/pki/tls/certs/postfix.pem
+    - src: www_server.crt
+      dest: /etc/pki/dovecot/certs/dovecot.pem
+    - src: www_server.key
+      dest: /etc/pki/tls/private/www_server.key
+    - src: www_server.key
+      dest: /etc/pki/tls/private/postfix.key
+    - src: www_server.key
+      dest: /etc/pki/dovecot/private/dovecot.pem
+
+- name: Edit postfix main.cf
+  template:
+    src: postfix.main.cf.j2
+    dest: /etc/postfix/main.cf
+  notify: "restart postfix"
+
+- name: Edit postfix master.cf
+  copy:
+    src: master.cf
+    dest: /etc/postfix/master.cf
+  notify: "restart postfix"
+
+- name: Edit dovecot ssl.conf
+  copy:
+    src: 10-ssl.conf
+    dest: /etc/dovecot/conf.d/10-ssl.conf
+  notify: "restart dovecot"

@@ -1,0 +1,13 @@
+;$ORIGIN {{ ip_reverse_three }}.in-addr.arpa.   ; Zone starting point in the name-space tree
+                     ; (if skipped - the origin is inferred by the DNS server based on
+                     ; zone declaration in name.conf.local file
+$TTL 15M             ; Default expiration time for all resources
+@ IN SOA ns1.{{ hostname }}.{{ domain_name }}. root.{{ hostname }}.{{ domain_name }}. (
+     2023030801   ; Serial
+        15M       ; Refresh (15 minutes)
+        5M        ; Retry (5 minutes)
+        120M      ; Expire (7 days in seconds)
+        600 )     ; Negative Cache TTL
+@             IN      NS      ns1.{{ hostname }}.{{ domain_name }}.  ; Name Server for domain-example.org
+{{ ip_last_number }}           IN      PTR     ns1.{{ hostname }}.{{ domain_name }}.
+
